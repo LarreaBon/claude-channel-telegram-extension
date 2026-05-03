@@ -194,29 +194,26 @@ def send_message_with_keyboard(
     buttons_per_row: int | str = BUTTONS_PER_ROW,
     layout: str | None = None,
     token: str | None = None,
+    auto_escape: bool = True,
 ) -> dict:
     """
     送含 inline_keyboard 按鈕的 TG 訊息。
 
     Args:
         chat_id: TG chat ID（字串或整數皆可）
-        text: 訊息主文（支援 HTML 或 MarkdownV2，依 parse_mode）
-        options: [(button_label, callback_data), ...]
-                 callback_data 長度上限 64 bytes（TG 限制）
-                 label 超過 30 字自動截斷為 27 字 + "..."
-        parse_mode: "HTML" | "MarkdownV2" | "" (純文字)
-        reply_to_message_id: 引用回覆的 message_id，None 表示不引用
-        buttons_per_row: 每行幾顆按鈕，預設 2；layout 優先
-        layout: "auto" 依 label 長度自動排列；None 使用 buttons_per_row
-        token: 若已知 token 可直接傳入，跳過自動偵測
+        text: 訊息主文（HTML 或 MarkdownV2，依 parse_mode）
+        options: [(button_label, callback_data), ...]，最多 8 顆
+        parse_mode: "HTML" | "MarkdownV2" | "" (純文字)，預設 "HTML"
+        reply_to_message_id: 引用回覆的 message_id，None 不引用
+        buttons_per_row: 每行幾顆按鈕，預設 2；layout="auto" 時自動排列
+        layout: "auto" 依 label 長度排；None 使用 buttons_per_row
+        token: 可選，跳過自動偵測
+        auto_escape: True（預設）時 MarkdownV2 自動 escape
 
     Returns:
-        TG API response dict。成功時 result["ok"] == True，
-        result["result"]["message_id"] 可用來追蹤 callback。
-        失敗時 result["ok"] == False，result["description"] 含錯誤原因。
+        TG API response dict（ok/result/description）
 
-    Raises:
-        ValueError: 沒找到 BOT_TOKEN、options > 8 顆、或 callback_data > 64 bytes 時
+    詳細參考：tg_keyboard_reference.md
     """
     if len(options) > _OPTIONS_MAX:
         raise ValueError(
@@ -231,6 +228,13 @@ def send_message_with_keyboard(
             "找不到 TELEGRAM_BOT_TOKEN。"
             "請設環境變數、或存入 ~/.claude/channels/telegram/.env"
         )
+
+    # MarkdownV2 自動 escape（預設啟用，避免 bot 渲染錯亂或 400 Bad Request）
+    # callback_data 不 escape（純 ASCII 字串，TG 不渲染）
+    if parse_mode and parse_mode.lower() in ("markdownv2", "markdown_v2") and auto_escape:
+        from .tg_markdownv2_escape import escape_md2  # noqa: PLC0415
+        text = escape_md2(text)
+        options = [(escape_md2(label), data) for label, data in options]
 
     # layout 參數優先於 buttons_per_row
     effective_layout: int | str = "auto" if layout == "auto" else buttons_per_row
