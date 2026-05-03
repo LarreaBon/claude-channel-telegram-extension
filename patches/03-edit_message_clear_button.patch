@@ -1,0 +1,24 @@
+--- a/external_plugins/telegram/server.ts
++++ b/external_plugins/telegram/server.ts
+@@ -NNN,6 +NNN,20 @@ bot.on('callback_query:data', async ctx => {
+     }).catch(err => {
+       process.stderr.write(`telegram channel: failed to deliver callback_query to Claude: ${err}\n`)
+     })
++    // Patch C: editMessage — find chosen button label, append to text and clear keyboard.
++    if (cbMsg) {
++      const inline_keyboard = cbMsg.reply_markup?.inline_keyboard ?? []
++      let chosenLabel = cb.data ?? 'unknown'
++      for (const row of inline_keyboard) {
++        for (const btn of row) {
++          if ('callback_data' in btn && btn.callback_data === cb.data) {
++            chosenLabel = btn.text
++            break
++          }
++        }
++      }
++      const originalText = ('text' in cbMsg ? cbMsg.text : '') ?? ''
++      const newText = `${originalText}\n\n✓ 已選: ${chosenLabel}`
++      await ctx.editMessageText(newText, { reply_markup: undefined }).catch(() => {})
++    }
+     return
+   }

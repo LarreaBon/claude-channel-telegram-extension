@@ -1,0 +1,12 @@
+--- a/external_plugins/telegram/server.ts
++++ b/external_plugins/telegram/server.ts
+@@ -977,6 +977,9 @@ async function handleInbound(
+            ...(attachment.mime ? { attachment_mime: attachment.mime } : {}),
+            ...(attachment.name ? { attachment_name: attachment.name } : {}),
+          } : {}),
++        ...(ctx.message?.reply_to_message?.message_id != null
++          ? { reply_to_message_id: String(ctx.message.reply_to_message.message_id) }
++          : {}),
+        },
+      },
+    }).catch(err => {

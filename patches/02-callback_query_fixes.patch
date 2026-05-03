@@ -1,0 +1,38 @@
+--- a/external_plugins/telegram/server.ts
++++ b/external_plugins/telegram/server.ts
+@@ -NNN,14 +NNN,18 @@ bot.on('callback_query:data', async ctx => {
+   const data = ctx.callbackQuery.data
+   const m = /^perm:(allow|deny|more):([a-km-z]{5})$/.exec(data)
+-  if (!m) {
+-    // Non-permission callback: answer immediately to clear spinner, then
+-    // emit a channel notification so Claude can act on the button press.
+-    await ctx.answerCallbackQuery({ text: '✓ 収到' }).catch(() => {})
+-    const cb = ctx.callbackQuery
+-    const cbMsg = cb.message
+-    const from = cb.from
+-    const access = loadAccess()
+-    const senderId = String(from.id)
+-    // Only forward to Claude if sender is allowlisted — same gate as text messages.
+-    if (!access.allowFrom.includes(senderId)) return
++  // Load access once and cache for both branches.
++  const access = loadAccess()
++  if (!m) {
++    // Non-permission callback: check allowlist first, then clear spinner.
++    const cb = ctx.callbackQuery
++    const cbMsg = cb.message
++    const from = cb.from
++    const senderId = String(from.id)
++    // Only forward to Claude if sender is allowlisted — same gate as text messages.
++    if (!access.allowFrom.includes(senderId)) {
++      await ctx.answerCallbackQuery({ text: 'Not authorized' }).catch(() => {})
++      return
++    }
++    await ctx.answerCallbackQuery({ text: '✓ 収到' }).catch(() => {})
+
+@@ -NNN,7 +NNN,6 @@ bot.on('callback_query:data', async ctx => {
+     return
+   }
+-  const access = loadAccess()
+   const senderId = String(ctx.from.id)
+   if (!access.allowFrom.includes(senderId)) {
+     await ctx.answerCallbackQuery({ text: 'Not authorized.' }).catch(() => {})
