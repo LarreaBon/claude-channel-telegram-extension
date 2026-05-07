@@ -179,7 +179,15 @@ PYEOF
   fi
 
   # ── Patch C: editMessage after callback ──────────────────────────────────
-  if grep -q "Patch C: editMessage" "$TS_FILE"; then
+  # Idempotency check: detect either our own marker OR upstream's native
+  # implementation. As of telegram plugin v0.0.6 the upstream maintainer
+  # merged Patches B+C inline (their server.ts even credits this repo by
+  # name), but their version doesn't carry our "Patch C: editMessage"
+  # comment, so a self-marker grep was returning false-negative on every
+  # run and the script tried to re-apply against now-shifted code.
+  if grep -q "Patch C: editMessage" "$TS_FILE" \
+       || grep -q "Patches B+C from claude-channel-telegram-extension" "$TS_FILE" \
+       || grep -qF "editMessageText(newText, { reply_markup: undefined })" "$TS_FILE"; then
     echo "[C] already applied — skip"
   else
     echo "[C] applying editMessage patch..."
@@ -192,8 +200,14 @@ path = sys.argv[1]
 with open(path, 'r') as f:
     src = f.read()
 
-marker = "Patch C: editMessage"
-if marker in src:
+# Same three-way detection as the shell guard, in case someone calls
+# the python block directly or copy-pastes it elsewhere.
+markers = (
+    "Patch C: editMessage",
+    "Patches B+C from claude-channel-telegram-extension",
+    "editMessageText(newText, { reply_markup: undefined })",
+)
+if any(m in src for m in markers):
     print("[C] already present")
     sys.exit(0)
 
