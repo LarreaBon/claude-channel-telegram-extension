@@ -146,6 +146,25 @@ Claude reads `callback_data`, executes the corresponding action, and replies wit
 
 See `docs/ROADMAP.md` for details.
 
+## Hooks
+
+Three Claude Code hooks live in `hooks/`. They are optional but recommended.
+
+• hooks/pre_tg_keyboard_warn.py — PreToolUse. Detects when a TG reply or
+  send_message contains decision/choice patterns without using
+  send_message_with_keyboard, and prints a [KEYBOARD MISSING WARN] advisory.
+
+• hooks/tg_keyboard_reminder.sh — UserPromptSubmit. When the incoming prompt
+  contains a Telegram channel tag, reminds Claude to use inline keyboards for
+  any reply that asks a yes/no or multi-choice question.
+
+• hooks/check_telegram_patch.sh — UserPromptSubmit. Re-applies Patches A, B,
+  and C automatically whenever the plugin server.ts mtime changes, so patches
+  survive plugin cache invalidation without manual intervention.
+
+See `hooks/README.md` for installation instructions and the settings.json
+snippet needed to register each hook.
+
 ## License
 
 MIT. See `LICENSE`.
