@@ -59,6 +59,12 @@ Claude sending a separate reply.
 
 File: `patches/03-edit_message_clear_button.patch`
 
+> **Note:** Telegram plugin **v0.0.6+** ships this behavior natively (their
+> `server.ts` even credits this repo). The installer detects the upstream
+> implementation via three fingerprints (`Patch C: editMessage`, the upstream
+> credit comment, or the `editMessageText(newText, { reply_markup: undefined })`
+> call) and skips the patch when any one matches.
+
 ### Skill - tg-helper
 
 A Claude skill (`skill/SKILL.md`) that teaches Claude when and how to use inline keyboards: button layout
